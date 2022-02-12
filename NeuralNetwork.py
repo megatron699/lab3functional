@@ -76,14 +76,14 @@ class NeuralNetwork:
             rmse_arr.append(math.sqrt(sko / (EPOCHS - 1)))
         return math.sqrt(sko / (EPOCHS - 1)), rmse_arr
 
-    def test(self, kohonen_outputs_windows):
+    def test(self, kohonen_outputs_windows, window_size=WINDOW_SIZE):
         sko = 0
         prediction = []
         result = []
         real = []
         for window_index in range(len(kohonen_outputs_windows) - 1):
             window_last_part = []
-            for i in range(1, WINDOW_SIZE):
+            for i in range(1, window_size):
                 current_window = kohonen_outputs_windows[window_index]
 
                 if len(window_last_part) > 0:

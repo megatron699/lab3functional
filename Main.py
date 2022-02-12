@@ -27,7 +27,7 @@ def normalize_and_divide(data, LEARN_PERCENTAGE):
     }
 
 
-def learn_hybrid_kohonen_network(kohonen_layer_network, mlp_network, learn_data):
+def learn_hybrid_kohonen_network(kohonen_layer_network, mlp_network, learn_data, epochs=EPOCHS):
     print('Kohonen train:')
     kohonen_layer_network.learn(EPOCHS_KOHONEN)
     print('Normalized outputs from kohonen layer for train:')
@@ -35,43 +35,75 @@ def learn_hybrid_kohonen_network(kohonen_layer_network, mlp_network, learn_data)
     print(kohonen_layer_learn_outputs)
 
     print('MLP train')
-    learn_error, rmse_arr = mlp_network.learn(kohonen_layer_learn_outputs)
+    learn_error, rmse_arr = mlp_network.learn(kohonen_layer_learn_outputs, epochs=epochs)
     print('Train error: {}'.format(learn_error))
-    plt.plot(rmse_arr)
-    plt.show()
+    # plt.plot(rmse_arr)
+    # plt.show()
     return kohonen_layer_learn_outputs
 
 
-def test_hybrid_kohonen_network(kohonen_layer_network, mlp_network, test_data):
+def test_hybrid_kohonen_network(kohonen_layer_network, mlp_network, test_data, window_size=WINDOW_SIZE):
     print('Normalized outputs from kohonen layer for test:')
     kohonen_layer_test_outputs = kohonen_layer_network.test(test_data)
     print(kohonen_layer_test_outputs)
-    mse, prediction, real = mlp_network.test(kohonen_layer_test_outputs)
-    print('Test error: %f' % mse)
+    rmse, prediction, real = mlp_network.test(kohonen_layer_test_outputs, window_size=WINDOW_SIZE)
+    print('Test error: %f' % rmse)
     print(prediction)
     print(real)
-    plt.plot(real, 'b')
-    plt.plot(prediction, 'g')
-    plt.show()
-    return kohonen_layer_test_outputs
+    # plt.plot(real, 'b')
+    # plt.plot(prediction, 'g')
+    # plt.show()
+    return kohonen_layer_test_outputs, rmse
 
 def train_and_test(learn_percentage=LEARN_PERCENTAGE, alpha_kohonen=ALPHA_KOHONEN,
                    neurons_count_kohonen=NEURONS_COUNT_KOHONEN, epochs=EPOCHS, window_size=WINDOW_SIZE):
     data = normalize_and_divide(get_data_set(ROWS_TO_SKIP, ROWS_COUNT), learn_percentage)
     kohonen_layer_network = Kohonen(data['learn'], alpha_kohonen, neurons_count_kohonen, window_size)
-   # NN_LAYERS = [13, 8, neurons_count_kohonen]
+    NN_LAYERS = [13, 8, neurons_count_kohonen]
     mlp_network = NeuralNetwork(Topology(NN_LAYERS))
     kohonen_layer_learn_outputs = learn_hybrid_kohonen_network(kohonen_layer_network, mlp_network, data['learn'], epochs)
     kohonen_layer_test_output, rmse = test_hybrid_kohonen_network(kohonen_layer_network, mlp_network, data['test'],
                                                                   window_size=window_size)
     return rmse
 
+def test_alpha():
+    alpha_min = 0.05
+    alpha_max = 0.51
+    step = 0.05
+    error_arr = []
+    alpha_arr = np.arange(alpha_min, alpha_max, step)
+    # orig = consts.ALPHA_KOHONEN
+    for a in alpha_arr:
+        # consts.ALPHA_KOHONEN = a
+        test_rmse = train_and_test(alpha_kohonen=a)
+      #  print(learn_error)
+        print(test_rmse)
+        error_arr.append(test_rmse)
+    # consts.ALPHA_KOHONEN = orig
+    return alpha_arr, error_arr
+
+def test_kohonen_neurons_count():
+    kohonen_neurons_count_min = 1
+    kohonen_neurons_count_max = 10
+    step = 1
+    error_arr = []
+    neurons_count_arr = np.arange(kohonen_neurons_count_min, kohonen_neurons_count_max, step)
+    # orig = consts.NEURONS_COUNT_KOHONEN
+    for a in neurons_count_arr:
+        # consts.NEURONS_COUNT_KOHONEN = a
+        test_error = train_and_test(neurons_count_kohonen=a)
+        print(test_error)
+        error_arr.append(test_error)
+    # consts.NEURONS_COUNT_KOHONEN = orig
+    return neurons_count_arr, error_arr
+
 def test_learn_size():
     learn_size_min = 0.55
-    learn_size_max = 0.95
+    learn_size_max = 0.96
     step = 0.05
     error_arr = []
     learns_size_arr = np.arange(learn_size_min, learn_size_max, step)
+
     #orig = consts.LEARN_PERCENTAGE
     for a in learns_size_arr:
        # consts.LEARN_PERCENTAGE = a
@@ -82,41 +114,67 @@ def test_learn_size():
    # consts.LEARN_PERCENTAGE = orig
     return learns_size_arr, error_arr
 
+def test_epochs_count():
+    epochs_min = 20
+    epochs_max = 200
+    step = 20
+    error_arr = []
+    epochs_arr = np.arange(epochs_min, epochs_max, step)
+
+    # orig = consts.EPOCHS
+    for a in epochs_arr:
+        # consts.EPOCHS = a
+        test_error = train_and_test(epochs=a)
+        print(test_error)
+        error_arr.append(test_error)
+    # consts.EPOCHS = orig
+    return epochs_arr, error_arr
+
 
 if __name__ == '__main__':
     data = normalize_and_divide(get_data_set(ROWS_TO_SKIP, ROWS_COUNT), LEARN_PERCENTAGE)
+    y = []
+    for x in data['learn']:
+        y.append(x + random.uniform(-0.01, 0.01))
+
+    plt.plot(data['learn'])
+    plt.plot(y)
+    plt.show()
+
+    z = []
+    for x in data['test']:
+        z.append(x + random.uniform(-0.02, 0.02))
+    plt.plot(data['test'])
+    plt.plot(z)
+    plt.show()
+    sys.exit(0)
     kohonen_layer_network = Kohonen(data['learn'], ALPHA_KOHONEN, NEURONS_COUNT_KOHONEN, WINDOW_SIZE)
     mlp_network = NeuralNetwork(Topology(NN_LAYERS))
     kohonen_layer_learn_outputs = learn_hybrid_kohonen_network(kohonen_layer_network, mlp_network, data['learn'])
     kohonen_layer_test_output = test_hybrid_kohonen_network(kohonen_layer_network, mlp_network, data['test'])
-# if __name__ == "__main__":
-#     data = get_data_from_framework()
-#     data = normalize(data)
-#
-#     # Kohonen
-#     print('Kohonen layer')
-#     count_classes = 3
-#     kohonen_layer_network = Kohonen(data['data'], ALPHA_KOHONEN, count_classes, len(data['data'][0]))
-#     error = kohonen_layer_network.train(EPOCHS_KOHONEN)
-#     target = kohonen_layer_network.test(data['data'])
-#     target_classes = get_target_classes(target)
-#     plt.plot(error)
-#     plt.show()
-#
-#     # MLP
-#     print('MLP')
-#     data['target'] = target_classes
-#     data = divide_data(data, LEARN_PERCENTAGE)
-#     topology = Topology(NN_LAYERS)
-#     nn = NeuralNetwork(topology)
-#     learn_error, loss_arr = nn.learn(data)
-#     test_error = nn.test(data)
-#     print(learn_error)
-#     print(test_error)
-#     plt.plot(loss_arr)
-#     plt.show()    # learn_size, error_arr = test_learn_size()
-#     # plt.xlabel('learn_size')
-#     # plt.ylabel('error')
-#     # plt.plot(learn_size, error_arr)
-#     # plt.show()
+
+    # alpha_arr, error_arr = test_alpha()
+    # plt.xlabel('ALPHA')
+    # plt.ylabel('error')
+    # plt.plot(alpha_arr, error_arr)
+    # plt.show()
+
+    # kohonen_neurons_count, error_arr = test_kohonen_neurons_count()
+    # plt.xlabel('Kohonen neurons count')
+    # plt.ylabel('error')
+    # plt.plot(kohonen_neurons_count, error_arr)
+    # plt.show()
+
+    # #
+    # learn_size, error_arr = test_learn_size()
+    # plt.xlabel('learn_size')
+    # plt.ylabel('error')
+    # plt.plot(learn_size, error_arr)
+    # plt.show()
+
+    # epochs, error_arr = test_epochs_count()
+    # plt.xlabel('epochs_count')
+    # plt.ylabel('error')
+    # plt.plot(epochs, error_arr)
+    # plt.show()
 
